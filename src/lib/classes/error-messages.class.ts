@@ -1,4 +1,4 @@
-export class errorMessages {
+export class ErrorMessages {
 
     private constructor() { }
 
