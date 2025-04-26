@@ -8,5 +8,6 @@ export * from './lib/ngx-s-data-table.component';
 */
 
 export { PropertyMapping } from './lib/classes/property-mapping.class';
+export { DataTableComponent } from './lib/component/data-table.component';
 export { DataTableModule } from './lib/s-data-table.module';
 
