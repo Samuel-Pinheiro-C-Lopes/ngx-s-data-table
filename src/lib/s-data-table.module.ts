@@ -7,6 +7,8 @@ import { CommonModule } from '@angular/common';
   declarations: [],
   imports: [
     CommonModule
-  ]
+  ],
+  providers: undefined,
+  exports: [],
 })
 export class DataTableModule { }
