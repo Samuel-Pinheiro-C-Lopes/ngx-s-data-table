@@ -1,0 +1,82 @@
+<section class="__s-outer-container">
+    <!-- Filters -->
+    <section class="__s-filter-outer">
+        <input 
+            [(ngModel)]="filterInput"
+        />
+        <button
+            (click)="filterData()"
+        >
+            search
+        </button>
+    </section>
+    <section class="__s-container">
+        <!-- The table displaying data -->
+        <section class="__s-table-outer">
+            <table class="__s-table">
+                <!-- Header -->
+                <thead>
+                    <tr>
+                        @for (prop of mapping; track prop.propertyName) {
+                            <th>{{prop.columnName}}</th>
+                        }
+                    </tr>
+                </thead>
+
+                @for (element of filteredData; track element) {
+                    <tr
+                        [class.__s-clickable]="useExpantion || useClick"
+                        (click)="rowClicked(element)"
+                    >
+                        @for (prop of mapping; track prop.propertyName) {
+                            <td>
+                                <div 
+                                    [textContent]="findPropertyValue(element, prop)" 
+                                    class="__s-content"
+                                ></div>
+                            </td>
+                        }
+                    </tr>
+
+                    <tr>
+                        @if (primaryKeyProperty) {
+                                <td
+                                    [attr.keyValue]="element[primaryKeyProperty]"
+                                    [attr.colspan]="mapping.length"
+                                    class="s-table-td-full"
+                                >
+                                    <div class="__expandable-content">
+                                        <div [innerHTML]="expandedPropertyAsSafe"></div>
+                                        <ng-content *ngTemplateOutlet="expandedContent; context: { $implicit: element }"></ng-content>
+                                    </div>
+                                </td>
+                        }
+                    </tr>
+                }
+            </table>
+        </section>
+        <!-- Pagination -->
+        <section class="__s-pagination-outer">
+            <button>
+                <div class="__s-arrow __s-left-arrow"></div>
+            </button>
+            <div class="__s-pagination-data">
+                <input 
+                    [(ngModel)]="labelTotalElements"
+                    disabled
+                />
+                <input 
+                    [(ngModel)]="labelActualPage"
+                    disabled
+                />
+                <input 
+                    [(ngModel)]="labelTotalPages"
+                    disabled
+                />
+            </div>
+            <button>
+                <div class="__s-arrow  __s-right-arrow"></div>
+            </button>
+        </section>
+    </section>
+</section>
