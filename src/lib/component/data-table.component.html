@@ -23,7 +23,7 @@
                     </tr>
                 </thead>
 
-                @for (element of filteredData; track element) {
+                @for (element of paginatedData; track element) {
                     <tr
                         [class.__s-clickable]="useExpantion || useClick"
                         (click)="rowClicked(element)"
@@ -57,7 +57,7 @@
         </section>
         <!-- Pagination -->
         <section class="__s-pagination-outer">
-            <button>
+            <button (click)="previousPage()">
                 <div class="__s-arrow __s-left-arrow"></div>
             </button>
             <div class="__s-pagination-data">
@@ -74,7 +74,7 @@
                     disabled
                 />
             </div>
-            <button>
+            <button (click)="nextPage()">
                 <div class="__s-arrow  __s-right-arrow"></div>
             </button>
         </section>

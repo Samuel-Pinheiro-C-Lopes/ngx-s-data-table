@@ -30,8 +30,8 @@ export class DataTableComponent {
 
   mapping: PropertyMapping[] = [];
 
-  primaryKeyProperty: string = "";
-  expandableProperty: string = "";
+  @Input() primaryKeyProperty: string = "";
+  @Input() expandableProperty: string = "";
 
   @Input() usePagination: boolean = false;
   @Input() useExpantion: boolean = false;
@@ -47,14 +47,15 @@ export class DataTableComponent {
   filteredData: Obj[] = [];
   paginatedData: Obj[] = [];
 
+  @Input() pageSize: number = 20;
+
   labelTotalElements: string = "";
   labelActualPage: string = "";
   labelTotalPages: string = "";
   page: number = 1;
+  maxPage: number = 1;
 
-  constructor(private sanitizer: DomSanitizer) {
-
-  }
+  constructor(private sanitizer: DomSanitizer) { }
 
   ngOnInit() {
     let result = new ValidationResult();
@@ -94,12 +95,20 @@ export class DataTableComponent {
     }
 
     this.filteredData = this.dataSource;
-    this.paginatedData = this.filteredData.slice(0, 50);
+    this.paginatedData = this.filteredData.slice(0, this.pageSize);
 
-    this.primaryKeyProperty = this.mapping.find(m => m.isPrimaryKey)?.propertyName ?? "";
-    this.expandableProperty = this.mapping.find(m => m.isExpandableContent)?.propertyName ?? "";
+    if (!this.primaryKeyProperty)
+      this.primaryKeyProperty = this.mapping.find(m => m.isPrimaryKey)?.propertyName ?? "";
+    if (!this.expandableProperty)
+      this.expandableProperty = this.mapping.find(m => m.isExpandableContent)?.propertyName ?? "";
 
     this.mapping = this.mapping.filter(m => !m.isIgnored);
+
+    this.maxPage = Math.ceil(this.dataSource.length/this.pageSize);
+
+    this.labelActualPage = `Page: ${this.page}`;
+    this.labelTotalPages = `Total Pages: ${this.maxPage}`;
+    this.labelTotalElements = `Entries: ${this.dataSource.length}`
   }
 
   obtainProperValue = (propertyValue: any, propertyMapping: PropertyMapping):string => {
@@ -175,7 +184,7 @@ export class DataTableComponent {
 
   // summary: verifies if there is any object in the data provided isn't an object or instance
   // of the clazz providaded
-  validateDataProvided = (data: any[], clazz: { new (...any:any): any } | null)
+  validateDataProvided = (data: any[], clazz: Class | null)
   :ValidationResult => {
     if (data.find(obj => typeof obj != "object") != undefined)
       return new ValidationResult(true, ErrorMessages.dataFromSourceIsntObject);
@@ -185,7 +194,7 @@ export class DataTableComponent {
   }
 
   // Summary checks if the provided object is an instance of a class pŕovided
-  checkInstance(obj: any, clazz: { new (...any:any): any } | null): boolean {
+  checkInstance(obj: any, clazz: Class | null): boolean {
     if (typeof clazz === 'function') 
       return obj instanceof clazz;
     return false;
@@ -285,13 +294,28 @@ export class DataTableComponent {
   }
 
   filterData = () => {
-    this.filteredData = this.paginatedData.filter(el => this.mapping.some(m => {
-      const val = this.findPropertyValue(el, m);
-      if (typeof val === 'string') 
-        return val.toLocaleLowerCase()
-          .includes(this.filterInput.toLocaleLowerCase());
-      else 
-        return false;
-    }));
+    if (this.filterInput) {
+      this.filteredData = this.dataSource.filter(el => this.mapping.some(m => {
+        const val = this.findPropertyValue(el, m);
+        if (typeof val === 'string') 
+          return val.toLocaleLowerCase()
+            .includes(this.filterInput.toLocaleLowerCase());
+        else 
+          return false;
+      }));
+    } else {
+      this.filteredData = this.dataSource;
+    }
+  }
+
+  previousPage = () => this.page > 1 ? (this.page--, this.labelActualPage = `Page: ${this.page}`, 
+    this.updatePaginatedItens()) : null;
+
+  nextPage = () => this.page < this.maxPage ? (this.page++, this.labelActualPage = `Page: ${this.page}`,
+     this.updatePaginatedItens()) : null;
+
+  updatePaginatedItens = () => {
+    let offset: number = (this.page - 1) * this.pageSize;
+    this.paginatedData = this.filteredData.slice(offset, offset + this.pageSize);
   }
 }

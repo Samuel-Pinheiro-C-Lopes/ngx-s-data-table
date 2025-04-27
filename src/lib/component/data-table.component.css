@@ -13,7 +13,7 @@
     overflow: auto;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
-    height: 400px;
+    height: 350px;
 }
 
 .__s-table {
@@ -78,7 +78,7 @@
 
     .__s-pagination-data input {
         width: fit-content;
-        max-width: 20%;
+        max-width: 30%;
     }
 
 .__s-arrow {
