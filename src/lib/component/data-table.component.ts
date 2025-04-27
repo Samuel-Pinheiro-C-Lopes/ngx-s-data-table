@@ -104,11 +104,7 @@ export class DataTableComponent {
 
     this.mapping = this.mapping.filter(m => !m.isIgnored);
 
-    this.maxPage = Math.ceil(this.dataSource.length/this.pageSize);
-
-    this.labelActualPage = `Page: ${this.page}`;
-    this.labelTotalPages = `Total Pages: ${this.maxPage}`;
-    this.labelTotalElements = `Entries: ${this.dataSource.length}`
+    this.updatePagination();
   }
 
   obtainProperValue = (propertyValue: any, propertyMapping: PropertyMapping):string => {
@@ -306,16 +302,26 @@ export class DataTableComponent {
     } else {
       this.filteredData = this.dataSource;
     }
+    this.updatePagination();
   }
 
-  previousPage = () => this.page > 1 ? (this.page--, this.labelActualPage = `Page: ${this.page}`, 
-    this.updatePaginatedItens()) : null;
+  previousPage = () => this.page > 1 ? (this.page--, this.updatePagination()) : null;
 
-  nextPage = () => this.page < this.maxPage ? (this.page++, this.labelActualPage = `Page: ${this.page}`,
-     this.updatePaginatedItens()) : null;
+  nextPage = () => this.page < this.maxPage ? (this.page++, this.updatePagination()) : null;
 
-  updatePaginatedItens = () => {
+  updatePagination = () => {
     let offset: number = (this.page - 1) * this.pageSize;
+
+    this.maxPage = Math.ceil(this.filteredData.length/this.pageSize);
+    if (this.page > this.maxPage)
+      this.page = this.maxPage;
     this.paginatedData = this.filteredData.slice(offset, offset + this.pageSize);
+    this.updateLabels();
+  }
+
+  updateLabels = () => {
+    this.labelActualPage = `Page: ${this.page}`;
+    this.labelTotalPages = `Pages: ${this.maxPage}`;
+    this.labelTotalElements = `Entries: ${this.filteredData.length}`;
   }
 }
