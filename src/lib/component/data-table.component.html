@@ -27,7 +27,7 @@
         <section class="__s-table-outer">
             <table class="__s-table">
                 <!-- Header -->
-                <thead>
+                <thead [style.background-color]="headBackgroundColor">
                     <tr>
                         @if (useSelection) {
                             <th></th>
@@ -43,7 +43,7 @@
                         @if (useSelection) {
                             <td></td>
                         }
-                        @for (prop of filterMapping; track prop) {
+                        @for (prop of filterMapping; track prop.propertyMapping) {
                             <td class="__s-filter-row">
                                 <input 
                                     [(ngModel)]="prop.inputFilter"
@@ -54,7 +54,7 @@
                     </tr>
                 }
 
-                @for (element of paginatedData; track element) {
+                @for (element of paginatedData; track $index) {
                     <tr
                         [class.__s-clickable]="useExpantion || useClick"
                         (click)="rowClicked(element)"

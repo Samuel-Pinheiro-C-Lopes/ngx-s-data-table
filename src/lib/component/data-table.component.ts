@@ -22,9 +22,6 @@ import { FilterMapping } from '../classes/filter-mapping.class';
   styleUrl: './data-table.component.css'
 })
 export class DataTableComponent {
-  @ContentChild('expandedContent', { read: TemplateRef }) expandedContent!: TemplateRef<any>;
-  
-  @Output() clickEvent: EventEmitter<any> = new EventEmitter<any>();
 
   // base
   @Input() dataClazz: Class | null = null;
@@ -36,6 +33,8 @@ export class DataTableComponent {
 
 
   // expand / click
+  @ContentChild('expandedContent', { read: TemplateRef }) expandedContent!: TemplateRef<any>;
+  @Output() clickEvent: EventEmitter<any> = new EventEmitter<any>();
   @Input() primaryKeyProperty: string = "";
   @Input() expandableProperty: string = "";
   @Input() useExpantion: boolean = false;
@@ -64,6 +63,9 @@ export class DataTableComponent {
   @Output() selectedActionEvent: EventEmitter<Obj[]> = new EventEmitter<Obj[]>();
   @Input() useSelection: boolean = false;
   selectedElements: Obj[] = [];
+
+  // Style
+  @Input() headBackgroundColor: string = "rgb(128, 0, 32)"
 
 
   constructor(private sanitizer: DomSanitizer) { }
@@ -305,8 +307,6 @@ export class DataTableComponent {
       this.selectedElements.push(element)
     else
       this.selectedElements.splice(this.selectedElements.findIndex(i => element[this.primaryKeyProperty] == i[this.primaryKeyProperty]), 1);
-  
-    console.warn(this.selectedElements);
   }
 
   selectedAction = () => this.selectedActionEvent.emit(this.selectedElements);
