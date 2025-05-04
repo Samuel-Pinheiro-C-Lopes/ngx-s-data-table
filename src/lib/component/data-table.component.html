@@ -1,15 +1,18 @@
 <section class="__s-outer-container">
     <!-- Filters -->
-    <section class="__s-filter-outer">
-        <input 
-            [(ngModel)]="filterInput"
-        />
-        <button
-            (click)="filterData()"
-        >
-            search
-        </button>
-    </section>
+     @if (useGeneralFilter) {
+        <section class="__s-filter-outer">
+            <input 
+                [(ngModel)]="filterInput"
+                placeholder="General search"
+            />
+            <button
+                (click)="filterData()"
+            >
+                search
+            </button>
+        </section>
+     }
     <section class="__s-container">
         <!-- The table displaying data -->
         <section class="__s-table-outer">
@@ -22,6 +25,19 @@
                         }
                     </tr>
                 </thead>
+
+                @if (useColumnsFilter) {
+                    <tr>
+                        @for (prop of filterMapping; track prop) {
+                            <td class="__s-filter-row">
+                                <input 
+                                    [(ngModel)]="prop.inputFilter"
+                                    [placeholder]="'Search by ' + prop.propertyMapping.propertyName"
+                                />
+                            </td>
+                        }
+                    </tr>
+                }
 
                 @for (element of paginatedData; track element) {
                     <tr
@@ -47,7 +63,9 @@
                                 >
                                     <div class="__expandable-content">
                                         <div [innerHTML]="expandedPropertyAsSafe"></div>
-                                        <ng-content *ngTemplateOutlet="expandedContent; context: { $implicit: element }"></ng-content>
+                                        @if(expandedContent) {
+                                            <ng-content *ngTemplateOutlet="expandedContent; context: { $implicit: element }"></ng-content>
+                                        }
                                     </div>
                                 </td>
                         }
