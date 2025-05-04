@@ -1,6 +1,9 @@
 {
   "name": "ngx-s-data-table",
   "version": "0.2.1",
+  "description": "Data table with filtering, pagination, checkbox selection, click event and expandable row.",
+  "author": "Samuel Pinheiro Coutinho Lopes",
+  "license": "MIT",
   "peerDependencies": {
     "@angular/common": "^19.0.0",
     "@angular/core": "^19.0.0"
