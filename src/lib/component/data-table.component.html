@@ -1,18 +1,27 @@
 <section class="__s-outer-container">
     <!-- Filters -->
-     @if (useGeneralFilter) {
-        <section class="__s-filter-outer">
-            <input 
-                [(ngModel)]="filterInput"
-                placeholder="General search"
-            />
+    <section class="__s-actions-outer">
+        <input 
+            *ngIf="useGeneralFilter"
+            [(ngModel)]="filterInput"
+            placeholder="General search"
+        />
+        <div class="__s-actions-buttons">
             <button
+                *ngIf="useGeneralFilter"
                 (click)="filterData()"
             >
                 search
             </button>
-        </section>
-     }
+            <button
+                *ngIf="useSelection"
+                (click)="selectedAction()"
+                class="__s-confirm-action"
+            >
+                action
+            </button>
+        </div>
+    </section>
     <section class="__s-container">
         <!-- The table displaying data -->
         <section class="__s-table-outer">
@@ -20,6 +29,9 @@
                 <!-- Header -->
                 <thead>
                     <tr>
+                        @if (useSelection) {
+                            <th></th>
+                        }
                         @for (prop of mapping; track prop.propertyName) {
                             <th>{{prop.columnName}}</th>
                         }
@@ -28,6 +40,9 @@
 
                 @if (useColumnsFilter) {
                     <tr>
+                        @if (useSelection) {
+                            <td></td>
+                        }
                         @for (prop of filterMapping; track prop) {
                             <td class="__s-filter-row">
                                 <input 
@@ -44,6 +59,11 @@
                         [class.__s-clickable]="useExpantion || useClick"
                         (click)="rowClicked(element)"
                     >
+                        @if (useSelection) {
+                            <td>
+                                <input (click)="selectElement($event, element)" type="checkbox" />
+                            </td>
+                        }
                         @for (prop of mapping; track prop.propertyName) {
                             <td>
                                 <div 

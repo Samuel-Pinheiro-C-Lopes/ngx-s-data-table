@@ -60,6 +60,12 @@ export class DataTableComponent {
   maxPage: number = 1;
   paginatedData: Obj[] = [];
 
+  // Selection
+  @Output() selectedActionEvent: EventEmitter<Obj[]> = new EventEmitter<Obj[]>();
+  @Input() useSelection: boolean = false;
+  selectedElements: Obj[] = [];
+
+
   constructor(private sanitizer: DomSanitizer) { }
 
   ngOnInit() {
@@ -290,4 +296,18 @@ export class DataTableComponent {
     this.labelTotalPages = `Pages: ${this.maxPage}`;
     this.labelTotalElements = `Entries: ${this.filteredData.length}`;
   }
+
+  selectElement = (event: Event, element: Obj) => {
+    event.stopPropagation();
+    const t = event.target as HTMLInputElement;
+
+    if (t.checked) 
+      this.selectedElements.push(element)
+    else
+      this.selectedElements.splice(this.selectedElements.findIndex(i => element[this.primaryKeyProperty] == i[this.primaryKeyProperty]), 1);
+  
+    console.warn(this.selectedElements);
+  }
+
+  selectedAction = () => this.selectedActionEvent.emit(this.selectedElements);
 }
