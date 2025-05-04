@@ -1,12 +1,11 @@
 {
-  "name": "ngx-s-data-table",
-  "version": "0.0.2",
+  "name": "my-lib",
+  "version": "1.0.0",
   "peerDependencies": {
-    "@angular/common": "^17.3.0",
-    "@angular/core": "^17.3.0"
+    "@angular/common": "^19.0.0",
+    "@angular/core": "^19.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"
-  },
-  "sideEffects": false
+  }
 }
