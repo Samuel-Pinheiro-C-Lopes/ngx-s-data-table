@@ -7,13 +7,16 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {  PropertyMapping } from '../classes/property-mapping.class';
 import { ValidationResult } from '../classes/validation-result.class';
 import { ErrorMessages } from '../classes/error-messages.class';
+import { Validate } from '../classes/validate.class';
 
 // types
 import { Class } from '../types/class.type';
 import { Obj } from '../types/obj.type';
+import { formatDate } from '@angular/common';
+import { FilterMapping } from '../classes/filter-mapping.class';
 
 @Component({
-  selector: 'lib-data-table',
+  selector: 'ngx-s-data-table',
   standalone: false,
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.css'
@@ -23,50 +26,52 @@ export class DataTableComponent {
   
   @Output() clickEvent: EventEmitter<any> = new EventEmitter<any>();
 
+  // base
   @Input() dataClazz: Class | null = null;
   @Input() dataSource: Obj[] = [];
   @Input() mappingParams: PropertyMapping[] = [];
   @Input() defaultCompositionProperty: string = "";
-
+  @Input() dateFormat: string = "";
   mapping: PropertyMapping[] = [];
 
+
+  // expand / click
   @Input() primaryKeyProperty: string = "";
   @Input() expandableProperty: string = "";
-
-  @Input() usePagination: boolean = false;
   @Input() useExpantion: boolean = false;
   @Input() useClick: boolean = false;
-  @Input() useFilter: boolean = false;
-  @Input() useColumnsFilter: boolean = false;
-
   expandedPropertyAsSafe: SafeHtml = "";
   lastExpandedKey: any = null;
 
+  // filter
+  @Input() useGeneralFilter: boolean = false;
+  @Input() useColumnsFilter: boolean = false;
   filterInput: string = "";
-
+  filterMapping: FilterMapping[] = [];
   filteredData: Obj[] = [];
-  paginatedData: Obj[] = [];
 
+  // pagination
+  @Input() usePagination: boolean = false;
   @Input() pageSize: number = 20;
-
   labelTotalElements: string = "";
   labelActualPage: string = "";
   labelTotalPages: string = "";
   page: number = 1;
   maxPage: number = 1;
+  paginatedData: Obj[] = [];
 
   constructor(private sanitizer: DomSanitizer) { }
 
   ngOnInit() {
     let result = new ValidationResult();
 
-    result = this.validateClazz(this.dataClazz);
+    result = Validate.validateClazz(this.dataClazz);
     if (result.error) {
       console.error(result.errorMessage);
       return;
     }
 
-    result = this.validateDataProvided(this.dataSource, this.dataClazz);
+    result = Validate.validateDataProvided(this.dataSource, this.dataClazz);
     if (result.error) {
       console.error(result.errorMessage);
       return;
@@ -74,7 +79,7 @@ export class DataTableComponent {
 
     let instance: Obj = new (this.dataClazz as Class)();
 
-    result = this.validatePropertyMappings(instance, this.mappingParams);
+    result = Validate.validatePropertyMappings(instance, this.mappingParams);
     if (result.error) {
       console.error(result.errorMessage);
       return;
@@ -83,67 +88,69 @@ export class DataTableComponent {
     this.mapping = [...this.mappingParams, 
       ...this.mapClass(instance, this.mappingParams.map(p => p.propertyName))];
 
-    const primaryKeyMapping = this.mapping.find(m => m.isPrimaryKey);
+    const primaryKeyName = this.mapping.find(m => m.isPrimaryKey)?.propertyName ?? this.primaryKeyProperty;
 
-    if (primaryKeyMapping) {
-      result = this.validateUniquenessOfKeyProperty(this.dataSource, primaryKeyMapping.propertyName);
+    if (this.useClick || this.useExpantion)
+      if (!this.primaryKeyProperty) {
+        console.error(ErrorMessages.useExpandOrClickButNoKeyProperty)
+        return;
+      }
+
+    if (primaryKeyName) {
+      result = Validate.validateUniquenessOfKeyProperty(this.dataSource, primaryKeyName);
       if (result.error) {
         console.error(result.errorMessage);
         return;
       }
-      this.primaryKeyProperty = primaryKeyMapping.propertyName;
+      this.primaryKeyProperty = primaryKeyName;
     }
-
-    this.filteredData = this.dataSource;
-    this.paginatedData = this.filteredData.slice(0, this.pageSize);
 
     if (!this.primaryKeyProperty)
       this.primaryKeyProperty = this.mapping.find(m => m.isPrimaryKey)?.propertyName ?? "";
     if (!this.expandableProperty)
       this.expandableProperty = this.mapping.find(m => m.isExpandableContent)?.propertyName ?? "";
 
+    result = Validate.checkExpansionAndClickOptions(new (this.dataClazz as Class)(), this.useExpantion, this.useClick, 
+      this.primaryKeyProperty, this.expandedContent, this.expandableProperty);
+    if (result.error) {
+      console.error(result.errorMessage);
+      return;
+    }
+
+    if (this.useExpantion && !this.expandedContent && !this.expandableProperty) {
+      console.error(ErrorMessages.useExpandButNoPropertyOrContent);
+      return;
+    }
+
+    this.filteredData = this.dataSource;
+    this.paginatedData = this.filteredData.slice(0, this.pageSize);
+
     this.mapping = this.mapping.filter(m => !m.isIgnored);
+
+    if (this.useColumnsFilter) {
+      this.filterMapping = this.mapping.map(m => new FilterMapping(m));
+    }
 
     this.updatePagination();
   }
 
+  // Summary: returns the value to be displayed in the table for one property of any type
   obtainProperValue = (propertyValue: any, propertyMapping: PropertyMapping):string => {
     if (Array.isArray(propertyValue)) {
       if (typeof propertyValue[0] != 'object')
         return propertyValue.toString();
       else
-        return propertyValue.map(obj => obj[propertyMapping.compositionPropertyName]).toString();
+        return propertyValue.map(obj => obj[propertyMapping.compositionPropertyName]).join(", ");
     } else if (typeof propertyValue === 'object') {
+      if (Validate.checkIfIsDate(propertyValue)) 
+        return this.dateFormat ? formatDate(propertyValue, this.dateFormat, 'en-US') : propertyValue.toLocaleString();
       return `${propertyValue[propertyMapping.compositionPropertyName]}`;
     } else {
       return `${propertyValue}`;
     }
   }
 
-  checkIfHas = (instance: Obj, propertyMapping: PropertyMapping): boolean => {
-    if (propertyMapping.propertyName in instance) {
-      return true;
-    }
-
-    for (let key in instance)
-      if (typeof instance[key] === 'object' && this.checkIfHas(instance[key], propertyMapping))
-        return true;
-
-    return false;
-  }
-
-  checkIfHasAndIsntFunction = (instance: Obj, propertyMapping: PropertyMapping): boolean => {
-    if (propertyMapping.propertyName in instance 
-      && typeof instance[propertyMapping.propertyName] != 'function') 
-      return true;
-
-    for (let key in instance)
-      if (typeof instance[key] === 'object' && this.checkIfHas(instance[key], propertyMapping))
-        return true;
-
-    return false;
-  }
-
+  // Summary: finds the value in the object assigned to a property
   findPropertyValue = (instance: Obj, propertyMapping: PropertyMapping): any => {
     if (instance[propertyMapping.propertyName] !== undefined) 
       return this.obtainProperValue(instance[propertyMapping.propertyName], propertyMapping);
@@ -157,79 +164,6 @@ export class DataTableComponent {
     }
   
     return undefined;
-  }
-
-  // Summary: validates the clazz providaded
-  validateClazz = (clazz: { new (...any: any): any} | null): ValidationResult => 
-    clazz ? new ValidationResult() : new ValidationResult(true, ErrorMessages.noClass);
-
-  // Summary: verifies if in an array of objects the value of a said key property is being repeated among
-  // the records provided.
-  validateUniquenessOfKeyProperty = (data: Obj[], keyProperty: string | undefined)
-  : ValidationResult => {
-    const keys: Set<any> = new Set();
-    if (keyProperty == undefined)
-      return new ValidationResult();
-    for (let i = 0; i < data.length; i++) 
-      keys.add(data[i][keyProperty])
-    if (keys.size != data.length)
-      return new ValidationResult(true, ErrorMessages.multipleElementsWithSameKey);
-    else 
-      return new ValidationResult();
-  } 
-
-  // summary: verifies if there is any object in the data provided isn't an object or instance
-  // of the clazz providaded
-  validateDataProvided = (data: any[], clazz: Class | null)
-  :ValidationResult => {
-    if (data.find(obj => typeof obj != "object") != undefined)
-      return new ValidationResult(true, ErrorMessages.dataFromSourceIsntObject);
-    else if (data.find(obj => !this.checkInstance(obj, clazz)) != undefined)
-        return new ValidationResult(true, ErrorMessages.objIsNotInstanceOfClazz);
-    return new ValidationResult(false);
-  }
-
-  // Summary checks if the provided object is an instance of a class pŕovided
-  checkInstance(obj: any, clazz: Class | null): boolean {
-    if (typeof clazz === 'function') 
-      return obj instanceof clazz;
-    return false;
-  }
-
-
-  // Summary: validates an array of property mappings provided based on an instance of a class.
-  // If there is more than one mapping for primary key, more than one for expand key, or any property that
-  // doesn't exists in the instance or is a function, it returns a validation result with an error.
-  validatePropertyMappings = (instance: Obj, params: PropertyMapping[])
-  : ValidationResult => {
-    let result: ValidationResult = new ValidationResult();
-    let primaryKeyAppeared: PropertyMapping | undefined = undefined;
-    let expandKeyAppeared: PropertyMapping | undefined = undefined;
-    params.forEach((p) => {
-      if (!this.checkIfHasAndIsntFunction(instance, p)) {
-        result = new ValidationResult(true, ErrorMessages.paramNameIsntValidPropertyForClazz + 
-          `. ${p.propertyName} doesn't exist in the dataClazz or is a function.`);
-        return;
-      }
-
-      if (p.isPrimaryKey && primaryKeyAppeared) {
-        result = new ValidationResult(true, ErrorMessages.twoOrMoreParamsWithPrimaryKeyAssigned + 
-          `. ${p.propertyName} and ${primaryKeyAppeared.propertyName} were found.`);
-        return;
-      } else if (p.isPrimaryKey){
-        primaryKeyAppeared = p;
-      }
-
-      if (p.isExpandableContent && expandKeyAppeared) {
-        result = new ValidationResult(true, ErrorMessages.twoOrMoreParamsWithExpandAssigned + 
-          `. ${p.propertyName} and ${expandKeyAppeared.propertyName} were found.`);
-        return;
-      } else if (p.isExpandableContent) {
-        expandKeyAppeared = p;
-      }
-    });
-
-    return result;
   }
 
   mapClass = (instance: Obj, propsToIgnore: string[]): PropertyMapping[] => {
@@ -249,9 +183,9 @@ export class DataTableComponent {
       this.target(element);
   }
 
-  target = (element: Obj) => this.clickEvent.emit(element[this.primaryKeyProperty]);
+  private target = (element: Obj) => this.clickEvent.emit(element[this.primaryKeyProperty]);
 
-  expand = (element: Obj) => {
+  private expand = (element: Obj) => {
     let wasExpanded:HTMLElement | null = null;
 
     if (!this.primaryKeyProperty)
@@ -261,7 +195,6 @@ export class DataTableComponent {
     this.expandedPropertyAsSafe = this.sanitizer.bypassSecurityTrustHtml("");
     if (this.lastExpandedKey != null)
       wasExpanded = document.querySelector(`[keyValue="${this.lastExpandedKey}"]`);
-    console.info(wasExpanded);
 
     if (!toBeExpanded) {
       console.error(`the key: ${element[this.primaryKeyProperty]} couldn't be found`);
@@ -289,9 +222,38 @@ export class DataTableComponent {
     }
   }
 
+  // Summary: filters the data accordingly to the filter options provided by the user.
+  // The priority is to filter by specific columns and then apply the general filter.
   filterData = () => {
+    if (this.useColumnsFilter && this.useGeneralFilter) {
+      this.filteredData = this.filterDataByGeneral(this.filterDataByColumns(this.dataSource));
+    }
+    else if (this.useColumnsFilter) {
+      this.filteredData = this.filterDataByColumns(this.dataSource);
+    } else if (this.useGeneralFilter) {
+      this.filteredData = this.filterDataByGeneral(this.dataSource);
+    }
+
+    this.updatePagination();
+  }
+
+  filterDataByColumns = (data: Obj[]): Obj[] => {
+    if (this.filterMapping.some(m => m.inputFilter != '')) {
+      return data.filter(el => this.filterMapping.every(m => {
+        const val = this.findPropertyValue(el, m.propertyMapping);
+        if (typeof val === 'string')
+          return val.toLocaleLowerCase().includes(m.inputFilter.toLocaleLowerCase());
+        else 
+          return false;
+      }));
+    } else {
+      return data;
+    }
+  }
+
+  filterDataByGeneral = (data: Obj[]): Obj[] => {
     if (this.filterInput) {
-      this.filteredData = this.dataSource.filter(el => this.mapping.some(m => {
+      return data.filter(el => this.mapping.some(m => {
         const val = this.findPropertyValue(el, m);
         if (typeof val === 'string') 
           return val.toLocaleLowerCase()
@@ -300,9 +262,8 @@ export class DataTableComponent {
           return false;
       }));
     } else {
-      this.filteredData = this.dataSource;
+      return data;
     }
-    this.updatePagination();
   }
 
   previousPage = () => this.page > 1 ? (this.page--, this.updatePagination()) : null;
@@ -313,8 +274,13 @@ export class DataTableComponent {
     let offset: number = (this.page - 1) * this.pageSize;
 
     this.maxPage = Math.ceil(this.filteredData.length/this.pageSize);
+
+    if (this.maxPage === 0)
+      this.maxPage = 1;
+    
     if (this.page > this.maxPage)
       this.page = this.maxPage;
+    
     this.paginatedData = this.filteredData.slice(offset, offset + this.pageSize);
     this.updateLabels();
   }
