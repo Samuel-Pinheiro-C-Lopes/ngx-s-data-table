@@ -8,7 +8,7 @@
         />
         <div class="__s-actions-buttons">
             <button
-                *ngIf="useGeneralFilter"
+                *ngIf="useGeneralFilter || useColumnsFilter"
                 (click)="filterData()"
             >
                 search

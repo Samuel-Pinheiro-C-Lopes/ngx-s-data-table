@@ -24,7 +24,7 @@ import { FilterMapping } from '../classes/filter-mapping.class';
 export class DataTableComponent {
 
   // base
-  @Input() dataClazz: Class | null = null;
+  @Input() dataClass: Class | null = null;
   @Input() dataSource: Obj[] = [];
   @Input() mappingParams: PropertyMapping[] = [];
   @Input() defaultCompositionProperty: string = "";
@@ -73,19 +73,19 @@ export class DataTableComponent {
   ngOnInit() {
     let result = new ValidationResult();
 
-    result = Validate.validateClazz(this.dataClazz);
+    result = Validate.validateClazz(this.dataClass);
     if (result.error) {
       console.error(result.errorMessage);
       return;
     }
 
-    result = Validate.validateDataProvided(this.dataSource, this.dataClazz);
+    result = Validate.validateDataProvided(this.dataSource, this.dataClass);
     if (result.error) {
       console.error(result.errorMessage);
       return;
     }
 
-    let instance: Obj = new (this.dataClazz as Class)();
+    let instance: Obj = new (this.dataClass as Class)();
 
     result = Validate.validatePropertyMappings(instance, this.mappingParams);
     if (result.error) {
@@ -118,7 +118,7 @@ export class DataTableComponent {
     if (!this.expandableProperty)
       this.expandableProperty = this.mapping.find(m => m.isExpandableContent)?.propertyName ?? "";
 
-    result = Validate.checkExpansionAndClickOptions(new (this.dataClazz as Class)(), this.useExpantion, this.useClick, 
+    result = Validate.checkExpansionAndClickOptions(new (this.dataClass as Class)(), this.useExpantion, this.useClick, 
       this.primaryKeyProperty, this.expandedContent, this.expandableProperty);
     if (result.error) {
       console.error(result.errorMessage);
