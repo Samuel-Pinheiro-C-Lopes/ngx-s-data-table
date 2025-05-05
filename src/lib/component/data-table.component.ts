@@ -50,7 +50,7 @@ export class DataTableComponent {
   filteredData: Obj[] = [];
 
   // pagination
-  @Input() usePagination: boolean = false;
+  @Input() usePagination: boolean = true;
   @Input() pageSize: number = 20;
   labelTotalElements: string = "";
   labelActualPage: string = "";
