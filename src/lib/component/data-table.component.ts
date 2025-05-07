@@ -213,7 +213,7 @@ export class DataTableComponent {
       wasExpanded.classList.add("minimized");
       wasExpanded.classList.remove("visible");
       setTimeout(() => {
-        wasExpanded.classList.remove("minimized");
+        (wasExpanded as HTMLElement).classList.remove("minimized");
       }, 250);
     }
 
